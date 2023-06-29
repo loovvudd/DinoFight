@@ -17,6 +17,11 @@ public class Player1 : MonoBehaviour
     private Rigidbody2D rb;
     private bool isGrounded = false;
     private bool isDead = false;
+    public GameObject objetoSeguidor;
+    public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
+    
+    private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
+
 
     public float jumpForce = 7f;
 
@@ -142,6 +147,16 @@ public class Player1 : MonoBehaviour
         {
             isTouchingPlayer2 = true;
         }
+        
+            if (collision.collider.CompareTag("Item") && canTouchObject)
+            {
+            Transform objectTransform = collision.transform;
+            objectTransform.SetParent(transform); // Establecer el objeto colisionado como hijo del jugador
+            objectTransform.localPosition = new Vector3(0f, 1f, 0f); // Desplazar el objeto hacia arriba del jugador
+            collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
+            }
+        
+
     }
 
     private void OnCollisionExit2D(Collision2D collision)
@@ -149,12 +164,23 @@ public class Player1 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = false;
-            
+
         }
 
         if (collision.gameObject.CompareTag("Player")) // Comprueba si deja de tocar al jugador 2
         {
             isTouchingPlayer2 = false;
+        }
+        if (collision.collider.CompareTag("Item"))
+        {
+            if (player2 != null && player2.objetoSeguidor != null && player2.objetoSeguidor.transform.parent == transform)
+            {
+                canTouchObject = false;
+            }
+            else
+            {
+                canTouchObject = true;
+            }
         }
     }
 
@@ -185,8 +211,15 @@ public class Player1 : MonoBehaviour
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
         }
-
+        if (objetoSeguidor != null && objetoSeguidor.transform.parent == transform)
+        {
+            Rigidbody2D objetoRigidbody = objetoSeguidor.GetComponent<Rigidbody2D>();
+            objetoSeguidor.transform.SetParent(null); // Despegar el objeto del jugador
+            objetoRigidbody.isKinematic = false; // Activar la física del objeto
+            objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
+        }
     }
+    
 
     private IEnumerator InvincibilityCoroutine()
     {

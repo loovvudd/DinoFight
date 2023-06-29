@@ -13,6 +13,6 @@ public class MainMenu : MonoBehaviour
 
     public void LoadMainMenu()
     {
-        SceneManager.LoadScene("Menú"); // Reemplaza "MainMenu" con el nombre de tu escena del menú principal
+        SceneManager.LoadScene("MenuPrincipal"); // Reemplaza "MainMenu" con el nombre de tu escena del menú principal
     }
 }

@@ -14,6 +14,10 @@ public class Player2 : MonoBehaviour
     public float dialogOffsetX = 0f; // Desplazamiento horizontal de la nube de diálogo con respecto al jugador
     private float currentRunTime = 0f;
     private bool isWaiting = false;
+    public GameObject objetoSeguidor;
+    public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
+    public Player1 player1; // Referencia al script del Jugador 1
+    private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
 
     private Rigidbody2D rb;
     private bool isGrounded = false;
@@ -30,7 +34,7 @@ public class Player2 : MonoBehaviour
     public float pushForce = 10f;
     public int pushDamage = 1;
 
-    public Player1 player1; // Referencia al script del jugador 2
+   
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
     private void Start()
@@ -135,6 +139,13 @@ public class Player2 : MonoBehaviour
         {
             isTouchingPlayer1 = true;
         }
+        if (collision.collider.CompareTag("Item") && canTouchObject)
+        {
+            Transform objectTransform = collision.transform;
+            objectTransform.SetParent(transform); // Establecer el objeto colisionado como hijo del jugador
+            objectTransform.localPosition = new Vector3(0f, 1f, 0f); // Desplazar el objeto hacia arriba del jugador
+            collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
+        }
     }
 
     void OnCollisionExit2D(Collision2D collision)
@@ -147,6 +158,17 @@ public class Player2 : MonoBehaviour
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 1
         {
             isTouchingPlayer1 = false;
+        }
+        if (collision.collider.CompareTag("Item"))
+        {
+            if (player1 != null && player1.objetoSeguidor != null && player1.objetoSeguidor.transform.parent == transform)
+            {
+                canTouchObject = false;
+            }
+            else
+            {
+                canTouchObject = true;
+            }
         }
     }
 
@@ -177,7 +199,13 @@ public class Player2 : MonoBehaviour
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
         }
-
+        if (objetoSeguidor != null && objetoSeguidor.transform.parent == transform)
+        {
+            Rigidbody2D objetoRigidbody = objetoSeguidor.GetComponent<Rigidbody2D>();
+            objetoSeguidor.transform.SetParent(null); // Despegar el objeto del jugador
+            objetoRigidbody.isKinematic = false; // Activar la física del objeto
+            objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
+        }
     }
     private IEnumerator ShowDialogAndHideAfterDelay()
     {
