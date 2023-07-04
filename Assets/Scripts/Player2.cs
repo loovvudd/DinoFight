@@ -18,7 +18,8 @@ public class Player2 : MonoBehaviour
     public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
     public Player1 player1; // Referencia al script del Jugador 1
     private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
-
+    public AudioSource audioSource; // Referencia al componente AudioSource del jugador
+    public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
     private Rigidbody2D rb;
     private bool isGrounded = false;
     public float jumpForce = 7f;
@@ -34,7 +35,6 @@ public class Player2 : MonoBehaviour
     public float pushForce = 10f;
     public int pushDamage = 1;
 
-   
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
     private void Start()
@@ -43,6 +43,8 @@ public class Player2 : MonoBehaviour
         animator = GetComponent<Animator>(); // Asignar componente Animator
         currentLives = maxLives;
         StartCoroutine(ShowDialogAndHideAfterDelay());
+        audioSource = GetComponent<AudioSource>();
+    
     }
 
     private void Update()
@@ -178,12 +180,14 @@ public class Player2 : MonoBehaviour
             return;
         currentLives--;
 
-        if (currentLives <= 0)
+        if (currentLives <= 0 && !isDead)
         {
             Debug.Log("Game Over");
             animator.SetTrigger("Die");
             isDead = true;
             StartCoroutine(DisablePlayerCoroutine());
+
+           
         }
         else
         {
@@ -192,12 +196,14 @@ public class Player2 : MonoBehaviour
             // Activar la animación de daño al instante
             animator.Play("Damage2", -1, 0f); // Reemplaza "DamageAnimation" con el nombre de la animación de daño en el Animator
             animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
+            audioSource.PlayOneShot(damage);
         }
         IEnumerator DisablePlayerCoroutine()
         {
             yield return new WaitForSeconds(0.89f); // Tiempo de espera para que termine la animación de muerte
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
+            
         }
         if (objetoSeguidor != null && objetoSeguidor.transform.parent == transform)
         {
@@ -207,6 +213,8 @@ public class Player2 : MonoBehaviour
             objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
         }
     }
+   
+   
     private IEnumerator ShowDialogAndHideAfterDelay()
     {
         dialogBubble2.SetActive(true); // Activa la nube de diálogo

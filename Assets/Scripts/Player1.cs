@@ -19,9 +19,12 @@ public class Player1 : MonoBehaviour
     private bool isDead = false;
     public GameObject objetoSeguidor;
     public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
-    
+   
+
     private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
 
+    public AudioSource audioSource; // Referencia al componente AudioSource del jugador
+    public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
 
     public float jumpForce = 7f;
 
@@ -45,6 +48,10 @@ public class Player1 : MonoBehaviour
         currentLives = maxLives;
         animator = GetComponent<Animator>(); // Asignar componente Animator
         StartCoroutine(ShowDialogAndHideAfterDelay());
+        audioSource = GetComponent<AudioSource>();
+     
+
+       
     }
 
     private void Update()
@@ -183,6 +190,7 @@ public class Player1 : MonoBehaviour
             }
         }
     }
+   
 
     public void TakeDamage()
     {
@@ -204,10 +212,11 @@ public class Player1 : MonoBehaviour
             // Activar la animación de daño al instante
             animator.Play("Damage1", -1, 0f); // Reemplaza "DamageAnimation" con el nombre de la animación de daño en el Animator
             animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
+            audioSource.PlayOneShot(damage);
         }
         IEnumerator DisablePlayerCoroutine()
         {
-            yield return new WaitForSeconds(0.889f); // Tiempo de espera para que termine la animación de muerte
+            yield return new WaitForSeconds(0.890f); // Tiempo de espera para que termine la animación de muerte
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
         }
@@ -219,17 +228,17 @@ public class Player1 : MonoBehaviour
             objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
         }
     }
-    
 
-    private IEnumerator InvincibilityCoroutine()
+   
+    public IEnumerator InvincibilityCoroutine()
     {
         isInvincible = true;
-
-        // Realizar acciones visuales para indicar la invulnerabilidad del jugador (por ejemplo, cambiar el color del sprite)
 
         yield return new WaitForSeconds(invincibilityTime);
 
         isInvincible = false;
+
+       
     }
     private IEnumerator ShowDialogAndHideAfterDelay()
     {

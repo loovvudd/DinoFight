@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1404289883715159805}
   - component: {fileID: 1404289883715159804}
   - component: {fileID: 1404289883715159807}
+  - component: {fileID: 55896364}
   m_Layer: 0
   m_Name: Static Sprite (4)
   m_TagString: Ground
@@ -131,6 +132,20 @@ PlatformEffector2D:
   m_UseSideFriction: 0
   m_UseSideBounce: 0
   m_SideArc: 1
+--- !u!114 &55896364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1404289883715159806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c829f36838b3f4a4581822d5bfedea57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  teclaBajarJugador1: 274
+  teclaBajarJugador2: 115
 --- !u!1 &1404289883764427248
 GameObject:
   m_ObjectHideFlags: 0
@@ -143,6 +158,7 @@ GameObject:
   - component: {fileID: 1404289883764427255}
   - component: {fileID: 1404289883764427254}
   - component: {fileID: 1404289883764427249}
+  - component: {fileID: 1687107943}
   m_Layer: 0
   m_Name: Static Sprite (3)
   m_TagString: Ground
@@ -262,6 +278,20 @@ PlatformEffector2D:
   m_UseSideFriction: 0
   m_UseSideBounce: 0
   m_SideArc: 1
+--- !u!114 &1687107943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1404289883764427248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c829f36838b3f4a4581822d5bfedea57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  teclaBajarJugador1: 274
+  teclaBajarJugador2: 115
 --- !u!1 &1404289883841111266
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,6 +304,7 @@ GameObject:
   - component: {fileID: 1404289883841111264}
   - component: {fileID: 1404289883841111271}
   - component: {fileID: 1404289883841111270}
+  - component: {fileID: 1461218239}
   m_Layer: 0
   m_Name: Static Sprite (2)
   m_TagString: Ground
@@ -393,6 +424,20 @@ PlatformEffector2D:
   m_UseSideFriction: 0
   m_UseSideBounce: 0
   m_SideArc: 1
+--- !u!114 &1461218239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1404289883841111266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c829f36838b3f4a4581822d5bfedea57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  teclaBajarJugador1: 274
+  teclaBajarJugador2: 115
 --- !u!1 &1404289884885232314
 GameObject:
   m_ObjectHideFlags: 0
@@ -404,7 +449,7 @@ GameObject:
   - component: {fileID: 1404289884885232315}
   m_Layer: 0
   m_Name: PLATAFORMAS
-  m_TagString: Untagged
+  m_TagString: Platform
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
