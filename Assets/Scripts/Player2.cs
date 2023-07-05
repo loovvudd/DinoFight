@@ -23,7 +23,8 @@ public class Player2 : MonoBehaviour
     private Rigidbody2D rb;
     private bool isGrounded = false;
     public float jumpForce = 7f;
-
+    public Color healColor = Color.green;
+    public float colorChangeDuration = 1f;
     public int maxLives = 3;
     public int currentLives;
 
@@ -173,7 +174,25 @@ public class Player2 : MonoBehaviour
             }
         }
     }
+    public void Heal(int amount)
+    {
+        currentLives += amount;
+        Debug.Log("Player 2 healed. Current lives: " + currentLives);
 
+        StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
+    }
+
+    private IEnumerator ChangePlayerColor(Color color, float duration)
+    {
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            Color originalColor = spriteRenderer.color;
+            spriteRenderer.color = color;
+            yield return new WaitForSeconds(duration);
+            spriteRenderer.color = originalColor;
+        }
+    }
     public void TakeDamage()
     {
         if (isDead)
@@ -200,7 +219,7 @@ public class Player2 : MonoBehaviour
         }
         IEnumerator DisablePlayerCoroutine()
         {
-            yield return new WaitForSeconds(0.89f); // Tiempo de espera para que termine la animación de muerte
+            yield return new WaitForSeconds(0.90f); // Tiempo de espera para que termine la animación de muerte
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
             

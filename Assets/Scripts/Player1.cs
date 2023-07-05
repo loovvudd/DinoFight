@@ -19,8 +19,9 @@ public class Player1 : MonoBehaviour
     private bool isDead = false;
     public GameObject objetoSeguidor;
     public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
-   
 
+    public Color healColor = Color.green;
+    public float colorChangeDuration = 1f;
     private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
 
     public AudioSource audioSource; // Referencia al componente AudioSource del jugador
@@ -49,13 +50,11 @@ public class Player1 : MonoBehaviour
         animator = GetComponent<Animator>(); // Asignar componente Animator
         StartCoroutine(ShowDialogAndHideAfterDelay());
         audioSource = GetComponent<AudioSource>();
-     
-
-       
     }
 
     private void Update()
     {
+       
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         Vector2 direction = new Vector2(horizontalInput, 0f).normalized;
 
@@ -214,6 +213,7 @@ public class Player1 : MonoBehaviour
             animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
             audioSource.PlayOneShot(damage);
         }
+        
         IEnumerator DisablePlayerCoroutine()
         {
             yield return new WaitForSeconds(0.890f); // Tiempo de espera para que termine la animación de muerte
@@ -260,6 +260,25 @@ public class Player1 : MonoBehaviour
         }
     }
 
+    public void Heal(int amount)
+    {
+        currentLives += amount;
+        Debug.Log("Player 1 healed. Current lives: " + currentLives);
+
+        StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
+    }
+
+    private IEnumerator ChangePlayerColor(Color color, float duration)
+    {
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            Color originalColor = spriteRenderer.color;
+            spriteRenderer.color = color;
+            yield return new WaitForSeconds(duration);
+            spriteRenderer.color = originalColor;
+        }
+    }
 
     void PushPlayer2()
     {
