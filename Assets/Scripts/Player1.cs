@@ -19,11 +19,11 @@ public class Player1 : MonoBehaviour
     private bool isDead = false;
     public GameObject objetoSeguidor;
     public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
-
+    private SpriteRenderer spriteRenderer;
     public Color healColor = Color.green;
     public float colorChangeDuration = 1f;
     private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
-
+    private int initialPushDamage;
     public AudioSource audioSource; // Referencia al componente AudioSource del jugador
     public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
 
@@ -42,6 +42,10 @@ public class Player1 : MonoBehaviour
     public Player2 player2; // Referencia al script del jugador 2
 
     private bool isTouchingPlayer2 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
+    private bool isPowerUpActive = false;
+    public float powerUpDuration = 10f;
+    private Vector3 originalScale;
+    private float targetScaleFactor = 2f;
 
     private void Start()
     {
@@ -50,6 +54,10 @@ public class Player1 : MonoBehaviour
         animator = GetComponent<Animator>(); // Asignar componente Animator
         StartCoroutine(ShowDialogAndHideAfterDelay());
         audioSource = GetComponent<AudioSource>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalScale = transform.localScale;
+        initialPushDamage = pushDamage;
+        isPowerUpActive = false;
     }
 
     private void Update()
@@ -94,15 +102,32 @@ public class Player1 : MonoBehaviour
         // Establecer el parámetro "Move" del Animator
         animator.SetFloat("Move", Mathf.Abs(horizontalInput));
         // Girar el personaje en la dirección del movimiento
-        if (horizontalInput > 0)
+        if (isPowerUpActive)
         {
-            transform.localScale = new Vector3(1f, 1f, 1f); // Mirar hacia la derecha
+            // Voltear el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
-        else if (horizontalInput < 0)
+        else
         {
-            transform.localScale = new Vector3(-1f, 1f, 1f); // Mirar hacia la izquierda
+            // Girar el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
 
+       
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             if (isGrounded && Input.GetKey(runKey)) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
@@ -153,8 +178,12 @@ public class Player1 : MonoBehaviour
         {
             isTouchingPlayer2 = true;
         }
-        
-            if (collision.collider.CompareTag("Item") && canTouchObject)
+        if (collision.collider.CompareTag("PowerUp"))
+        {
+            ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
+        if (collision.collider.CompareTag("Item") && canTouchObject)
             {
             Transform objectTransform = collision.transform;
             objectTransform.SetParent(transform); // Establecer el objeto colisionado como hijo del jugador
@@ -189,8 +218,44 @@ public class Player1 : MonoBehaviour
             }
         }
     }
-   
 
+    public void ActivatePowerUp()
+    {
+        if (!isPowerUpActive)
+        {
+            isPowerUpActive = true;
+            pushDamage *= 2;
+            StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
+            StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
+        }
+    }
+    private IEnumerator ResetPushDamageAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        pushDamage = initialPushDamage; // Restablecer el valor inicial de pushDamage
+    }
+    private IEnumerator ScalePlayerOverTime(float targetScaleFactor, float duration)
+    {
+        float initialScaleFactor = transform.localScale.x;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsedTime / duration);
+            float currentScaleFactor = Mathf.Lerp(initialScaleFactor, targetScaleFactor, t);
+
+            transform.localScale = new Vector3(currentScaleFactor, currentScaleFactor, 1f);
+
+            yield return null;
+        }
+
+        transform.localScale = originalScale; // Restaurar el tamaño original del personaje
+
+        isPowerUpActive = false; // Restablecer el estado del power-up
+    }
     public void TakeDamage()
     {
         if (isDead)
@@ -213,7 +278,8 @@ public class Player1 : MonoBehaviour
             animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
             audioSource.PlayOneShot(damage);
         }
-        
+       
+
         IEnumerator DisablePlayerCoroutine()
         {
             yield return new WaitForSeconds(0.890f); // Tiempo de espera para que termine la animación de muerte
@@ -229,7 +295,18 @@ public class Player1 : MonoBehaviour
         }
     }
 
-   
+    IEnumerator DisablePowerUpAfterDuration()
+    {
+        yield return new WaitForSeconds(powerUpDuration);
+
+        // Restaurar el tamaño original del jugador
+        float scaleFactor = 0.5f; // Factor de escala para reducir el tamaño a la mitad
+        SpriteRenderer playerSpriteRenderer = GetComponent<SpriteRenderer>();
+        playerSpriteRenderer.transform.localScale /= scaleFactor;
+
+        isPowerUpActive = false;
+    }
+
     public IEnumerator InvincibilityCoroutine()
     {
         isInvincible = true;
@@ -267,6 +344,7 @@ public class Player1 : MonoBehaviour
 
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
+   
 
     private IEnumerator ChangePlayerColor(Color color, float duration)
     {

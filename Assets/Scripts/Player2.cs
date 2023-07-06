@@ -27,7 +27,7 @@ public class Player2 : MonoBehaviour
     public float colorChangeDuration = 1f;
     public int maxLives = 3;
     public int currentLives;
-
+    private SpriteRenderer spriteRenderer;
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
 
@@ -38,14 +38,22 @@ public class Player2 : MonoBehaviour
 
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
+    private bool isPowerUpActive = false;
+    public float powerUpDuration = 10f;
+    private Vector3 originalScale;
+    private float targetScaleFactor = 2f;
+    private int initialPushDamage;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>(); // Asignar componente Animator
         currentLives = maxLives;
+        animator = GetComponent<Animator>(); // Asignar componente Animator
         StartCoroutine(ShowDialogAndHideAfterDelay());
         audioSource = GetComponent<AudioSource>();
-    
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalScale = transform.localScale;
+        initialPushDamage = pushDamage;
+        isPowerUpActive = false;
     }
 
     private void Update()
@@ -88,15 +96,30 @@ public class Player2 : MonoBehaviour
         // Establecer el parámetro "Move" del Animator
         animator.SetFloat("Move", Mathf.Abs(horizontalInput));
         // Girar el personaje en la dirección del movimiento
-        if (horizontalInput > 0)
+        if (isPowerUpActive)
         {
-            transform.localScale = new Vector3(1f, 1f, 1f); // Mirar hacia la derecha
+            // Voltear el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
-        else if (horizontalInput < 0)
+        else
         {
-            transform.localScale = new Vector3(-1f, 1f, 1f); // Mirar hacia la izquierda
+            // Girar el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
-
 
         if (Input.GetKeyDown(KeyCode.W))
         {
@@ -142,6 +165,11 @@ public class Player2 : MonoBehaviour
         {
             isTouchingPlayer1 = true;
         }
+        if (collision.collider.CompareTag("PowerUp"))
+        {
+            ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
         if (collision.collider.CompareTag("Item") && canTouchObject)
         {
             Transform objectTransform = collision.transform;
@@ -150,7 +178,43 @@ public class Player2 : MonoBehaviour
             collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
         }
     }
+    public void ActivatePowerUp()
+    {
+        if (!isPowerUpActive)
+        {
+            isPowerUpActive = true;
+            pushDamage *= 2;
+            StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
+            StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
+        }
+    }
+    private IEnumerator ResetPushDamageAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
 
+        pushDamage = initialPushDamage; // Restablecer el valor inicial de pushDamage
+    }
+    private IEnumerator ScalePlayerOverTime(float targetScaleFactor, float duration)
+    {
+        float initialScaleFactor = transform.localScale.x;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsedTime / duration);
+            float currentScaleFactor = Mathf.Lerp(initialScaleFactor, targetScaleFactor, t);
+
+            transform.localScale = new Vector3(currentScaleFactor, currentScaleFactor, 1f);
+
+            yield return null;
+        }
+
+        transform.localScale = originalScale; // Restaurar el tamaño original del personaje
+
+        isPowerUpActive = false; // Restablecer el estado del power-up
+    }
     void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
