@@ -8,51 +8,58 @@ public class Player1 : MonoBehaviour
     public KeyCode runKey = KeyCode.LeftShift;
     public float maxRunTime = 5f;
     public float waitTimeAfterRun = 2f;
-    public GameObject dialogBubble;
-    public float dialogDuration = 3f; 
+    public GameObject dialogBubble; // Referencia al objeto de la nube de diálogo
+    public float dialogDuration = 3f; // Duración en segundos de la nube de diálogo
     private float currentRunTime = 0f;
     private bool isWaiting = false;
-    public float dialogOffsetY = 1f; 
-    public float dialogOffsetX = 0f; 
+    public float dialogOffsetY = 1f; // Desplazamiento vertical de la nube de diálogo con respecto al jugador
+    public float dialogOffsetX = 0f; // Desplazamiento horizontal de la nube de diálogo con respecto al jugador
     private Rigidbody2D rb;
     private bool isGrounded = false;
     private bool isDead = false;
     public GameObject objetoSeguidor;
-    public float fuerzaLanzamiento = 5f; 
-
+    public float fuerzaLanzamiento = 5f; // Fuerza con la que se lanza el objeto hacia arriba
+    private SpriteRenderer spriteRenderer;
     public Color healColor = Color.green;
     public float colorChangeDuration = 1f;
-    private bool canTouchObject = true; 
-
-    public AudioSource audioSource;
-    public AudioClip damage; 
-
-    public float jumpForce = 7f;
-    
+    private bool canTouchObject = true; // Variable para rastrear si el Jugador 2 puede tocar el objeto seguidor
+    private int initialPushDamage;
+    public AudioSource audioSource; // Referencia al componente AudioSource del jugador
+    public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
     private BarraDeVida barraDeVida;
+    public float jumpForce = 7f;
+
     public int maxLives = 3;
     public int currentLives;
 
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
-    private Animator animator; 
+    private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.L;
     public float pushForce = 10f;
     public int pushDamage = 1;
 
-    public Player2 player2; 
+    public Player2 player2; // Referencia al script del jugador 2
 
-    private bool isTouchingPlayer2 = false; 
+    private bool isTouchingPlayer2 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
+    private bool isPowerUpActive = false;
+    public float powerUpDuration = 10f;
+    private Vector3 originalScale;
+    private float targetScaleFactor = 2f;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         currentLives = maxLives;
-        barraDeVida = FindObjectOfType<BarraDeVida>();
-        barraDeVida.InicializarBarraDeVida(currentLives);
-        animator = GetComponent<Animator>(); 
+        animator = GetComponent<Animator>(); // Asignar componente Animator
         StartCoroutine(ShowDialogAndHideAfterDelay());
         audioSource = GetComponent<AudioSource>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalScale = transform.localScale;
+        initialPushDamage = pushDamage;
+        isPowerUpActive = false;
+        barraDeVida = FindObjectOfType<BarraDeVida>();
+        barraDeVida.InicializarBarraDeVida(currentLives);
     }
 
     private void Update()
@@ -76,6 +83,7 @@ public class Player1 : MonoBehaviour
                 moveSpeedMultiplier = 1f;
             }
 
+            // Ejecutar animación de correr
             animator.SetBool("IsRunning", true);
         }
         else
@@ -86,34 +94,55 @@ public class Player1 : MonoBehaviour
                 isWaiting = false;
             }
 
+            // Detener animación de correr
             animator.SetBool("IsRunning", false);
         }
 
         moveSpeed = moveSpeed * moveSpeedMultiplier;
 
         transform.position += (Vector3)direction * moveSpeed * Time.deltaTime;
+        // Establecer el parámetro "Move" del Animator
         animator.SetFloat("Move", Mathf.Abs(horizontalInput));
-        if (horizontalInput > 0)
+        // Girar el personaje en la dirección del movimiento
+        if (isPowerUpActive)
         {
-            transform.localScale = new Vector3(1f, 1f, 1f); 
+            // Voltear el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
-        else if (horizontalInput < 0)
+        else
         {
-            transform.localScale = new Vector3(-1f, 1f, 1f); 
+            // Girar el sprite en la dirección del movimiento
+            if (horizontalInput > 0)
+            {
+                spriteRenderer.flipX = false; // No voltear horizontalmente
+            }
+            else if (horizontalInput < 0)
+            {
+                spriteRenderer.flipX = true; // Voltear horizontalmente
+            }
         }
 
+       
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
-            if (isGrounded && Input.GetKey(runKey))
+            if (isGrounded && Input.GetKey(runKey)) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
             }
             else
             {
+                // Intentar saltar sobre el jugador 2
                 TryJumpOnPlayer2();
             }
-            if (isGrounded) 
+            if (isGrounded) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
@@ -121,7 +150,7 @@ public class Player1 : MonoBehaviour
             animator.SetTrigger("Jump");
         }
 
-        if (Input.GetKeyDown(pushButton) && isTouchingPlayer2)
+        if (Input.GetKeyDown(pushButton) && isTouchingPlayer2) // Solo permite el ataque si está tocando al jugador 2
         {
             PushPlayer2();
             animator.SetTrigger("Attack");
@@ -144,20 +173,24 @@ public class Player1 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
-            TakeDamage();
+            TakeDamage(-1);
         }
 
-        if (collision.gameObject.CompareTag("Player"))
+        if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 2
         {
             isTouchingPlayer2 = true;
         }
-        
-            if (collision.collider.CompareTag("Item") && canTouchObject)
+        if (collision.collider.CompareTag("PowerUp"))
+        {
+            ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
+        if (collision.collider.CompareTag("Item") && canTouchObject)
             {
             Transform objectTransform = collision.transform;
-            objectTransform.SetParent(transform);
-            objectTransform.localPosition = new Vector3(0f, 1f, 0f);
-            collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true;
+            objectTransform.SetParent(transform); // Establecer el objeto colisionado como hijo del jugador
+            objectTransform.localPosition = new Vector3(0f, 1f, 0f); // Desplazar el objeto hacia arriba del jugador
+            collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
             }
         
 
@@ -171,7 +204,7 @@ public class Player1 : MonoBehaviour
 
         }
 
-        if (collision.gameObject.CompareTag("Player"))
+        if (collision.gameObject.CompareTag("Player")) // Comprueba si deja de tocar al jugador 2
         {
             isTouchingPlayer2 = false;
         }
@@ -187,13 +220,50 @@ public class Player1 : MonoBehaviour
             }
         }
     }
-   
 
-    public void TakeDamage()
+    public void ActivatePowerUp()
+    {
+        if (!isPowerUpActive)
+        {
+            isPowerUpActive = true;
+            pushDamage *= 2;
+            pushForce *= 3;
+            StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
+            StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
+        }
+    }
+    private IEnumerator ResetPushDamageAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        pushDamage = initialPushDamage; // Restablecer el valor inicial de pushDamage
+    }
+    private IEnumerator ScalePlayerOverTime(float targetScaleFactor, float duration)
+    {
+        float initialScaleFactor = transform.localScale.x;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsedTime / duration);
+            float currentScaleFactor = Mathf.Lerp(initialScaleFactor, targetScaleFactor, t);
+
+            transform.localScale = new Vector3(currentScaleFactor, currentScaleFactor, 1f);
+
+            yield return null;
+        }
+
+        transform.localScale = originalScale; // Restaurar el tamaño original del personaje
+
+        isPowerUpActive = false; // Restablecer el estado del power-up
+    }
+    public void TakeDamage(int dmg)
     {
         if (isDead)
             return;
-        currentLives--; 
+        currentLives -= dmg;
         barraDeVida.CambiarVidaActual(currentLives);
 
         if (currentLives <= 0)
@@ -207,27 +277,40 @@ public class Player1 : MonoBehaviour
         {
             StartCoroutine(InvincibilityCoroutine());
             Debug.Log("Player 1 took damage. Remaining lives: " + currentLives);
-            animator.Play("Damage1", -1, 0f);
-            animator.Update(0f);
+            // Activar la animación de daño al instante
+            animator.Play("Damage1", -1, 0f); // Reemplaza "DamageAnimation" con el nombre de la animación de daño en el Animator
+            animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
             audioSource.PlayOneShot(damage);
         }
-        
+       
+
         IEnumerator DisablePlayerCoroutine()
         {
-            yield return new WaitForSeconds(0.890f);
+            yield return new WaitForSeconds(0.890f); // Tiempo de espera para que termine la animación de muerte
 
-            gameObject.SetActive(false); 
+            gameObject.SetActive(false); // Desactivar el objeto del jugador
         }
         if (objetoSeguidor != null && objetoSeguidor.transform.parent == transform)
         {
             Rigidbody2D objetoRigidbody = objetoSeguidor.GetComponent<Rigidbody2D>();
-            objetoSeguidor.transform.SetParent(null);
-            objetoRigidbody.isKinematic = false;
-            objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento);
+            objetoSeguidor.transform.SetParent(null); // Despegar el objeto del jugador
+            objetoRigidbody.isKinematic = false; // Activar la física del objeto
+            objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
         }
     }
 
-   
+    IEnumerator DisablePowerUpAfterDuration()
+    {
+        yield return new WaitForSeconds(powerUpDuration);
+
+        // Restaurar el tamaño original del jugador
+        float scaleFactor = 0.5f; // Factor de escala para reducir el tamaño a la mitad
+        SpriteRenderer playerSpriteRenderer = GetComponent<SpriteRenderer>();
+        playerSpriteRenderer.transform.localScale /= scaleFactor;
+
+        isPowerUpActive = false;
+    }
+
     public IEnumerator InvincibilityCoroutine()
     {
         isInvincible = true;
@@ -240,11 +323,11 @@ public class Player1 : MonoBehaviour
     }
     private IEnumerator ShowDialogAndHideAfterDelay()
     {
-        dialogBubble.SetActive(true);
+        dialogBubble.SetActive(true); // Activa la nube de diálogo
 
         yield return new WaitForSeconds(dialogDuration);
 
-        dialogBubble.SetActive(false);
+        dialogBubble.SetActive(false); // Desactiva la nube de diálogo
     }
     private void TryJumpOnPlayer2()
     {
@@ -253,6 +336,7 @@ public class Player1 : MonoBehaviour
 
         if (hitGround.collider != null && hitGround.collider.CompareTag("Ground") && hitPlayer.collider != null && hitPlayer.collider.CompareTag("Player"))
         {
+            // Saltar sobre el jugador 2
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
     }
@@ -264,6 +348,7 @@ public class Player1 : MonoBehaviour
 
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
+   
 
     private IEnumerator ChangePlayerColor(Color color, float duration)
     {
@@ -290,7 +375,7 @@ public class Player1 : MonoBehaviour
                 player2Rb.AddForce(pushDirection * pushForce, ForceMode2D.Impulse);
             }
 
-            player2.TakeDamage();
+            player2.TakeDamage(pushDamage);
            
         }
         
