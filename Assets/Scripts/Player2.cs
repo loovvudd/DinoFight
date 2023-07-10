@@ -30,7 +30,13 @@ public class Player2 : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
+    public float powerDownDuration = 10f;
+    public float powerDownScaleFactor = 0.5f;
+    public float powerDownSpeedMultiplier = 0.5f;
+    public int powerDownDamageReduction = 1;
 
+    private bool isPowerDownActive = false;
+    private float originalMoveSpeed;
     private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.G;
     public float pushForce = 10f;
@@ -38,11 +44,12 @@ public class Player2 : MonoBehaviour
 
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
-    private bool isPowerUpActive = false;
+    public bool isPowerUpActive = false;
     public float powerUpDuration = 10f;
     private Vector3 originalScale;
     private float targetScaleFactor = 2f;
     private int initialPushDamage;
+    private BarraDeVida2 barraDeVida2;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -54,6 +61,9 @@ public class Player2 : MonoBehaviour
         originalScale = transform.localScale;
         initialPushDamage = pushDamage;
         isPowerUpActive = false;
+        barraDeVida2 = FindObjectOfType<BarraDeVida2>();
+        barraDeVida2.InicializarBarraDeVida(currentLives);
+        originalMoveSpeed = moveSpeed;
     }
 
     private void Update()
@@ -75,7 +85,7 @@ public class Player2 : MonoBehaviour
                 isWaiting = true;
                 moveSpeedMultiplier = 1f;
             }
-            // Ejecutar animación de correr
+
             animator.SetBool("IsRunning", true);
         }
         else
@@ -159,7 +169,7 @@ public class Player2 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
-            TakeDamage();
+            TakeDamage(-1);
         }
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 1
         {
@@ -168,6 +178,11 @@ public class Player2 : MonoBehaviour
         if (collision.collider.CompareTag("PowerUp"))
         {
             ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
+        if (collision.collider.CompareTag("PowerDown"))
+        {
+            ApplyPowerDown(powerDownDuration);
             Destroy(collision.gameObject);
         }
         if (collision.collider.CompareTag("Item") && canTouchObject)
@@ -184,9 +199,41 @@ public class Player2 : MonoBehaviour
         {
             isPowerUpActive = true;
             pushDamage *= 2;
+            pushForce *= 3;
+
             StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
             StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
         }
+    }
+
+    public void ApplyPowerDown(float powerDownDuration)
+    {
+        if (!isPowerDownActive)
+        {
+            isPowerDownActive = true;
+
+            StartCoroutine(PowerDownCoroutine());
+        }
+    }
+    private IEnumerator PowerDownCoroutine()
+    {
+        // Reducir el tamaño del jugador
+        transform.localScale = originalScale * powerDownScaleFactor;
+
+        // Reducir la velocidad del jugador
+        moveSpeed *= powerDownSpeedMultiplier;
+
+        // Reducir el daño del jugador
+        pushDamage -= powerDownDamageReduction;
+
+        yield return new WaitForSeconds(powerDownDuration);
+
+        // Restaurar el tamaño, velocidad y daño original del jugador
+        transform.localScale = originalScale;
+        moveSpeed = originalMoveSpeed;
+        pushDamage = initialPushDamage;
+
+        isPowerDownActive = false;
     }
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
@@ -257,11 +304,12 @@ public class Player2 : MonoBehaviour
             spriteRenderer.color = originalColor;
         }
     }
-    public void TakeDamage()
+    public void TakeDamage(int dmg)
     {
         if (isDead)
             return;
-        currentLives--;
+        currentLives-=dmg;
+        barraDeVida2.CambiarVidaActual(currentLives);
 
         if (currentLives <= 0 && !isDead)
         {
@@ -343,7 +391,7 @@ public class Player2 : MonoBehaviour
                 player1Rb.AddForce(pushDirection * pushForce, ForceMode2D.Impulse);
             }
 
-            player1.TakeDamage();
+            player1.TakeDamage(pushDamage);
         }
         animator.SetTrigger("Attack"); // Activar la animación de golpe
     }

@@ -26,12 +26,19 @@ public class Player1 : MonoBehaviour
     private int initialPushDamage;
     public AudioSource audioSource; // Referencia al componente AudioSource del jugador
     public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
-
+    private BarraDeVida barraDeVida;
     public float jumpForce = 7f;
 
     public int maxLives = 3;
     public int currentLives;
+    public float powerDownDuration = 10f;
+    public float powerDownScaleFactor = 0.5f;
+    public float powerDownSpeedMultiplier = 0.5f;
+    public int powerDownDamageReduction = 1;
 
+    private bool isPowerDownActive = false;
+    private float originalMoveSpeed;
+    private Vector3 originalScale;
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
     private Animator animator; // Referencia al componente Animator
@@ -42,9 +49,9 @@ public class Player1 : MonoBehaviour
     public Player2 player2; // Referencia al script del jugador 2
 
     private bool isTouchingPlayer2 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
-    private bool isPowerUpActive = false;
+   public bool isPowerUpActive = false;
     public float powerUpDuration = 10f;
-    private Vector3 originalScale;
+
     private float targetScaleFactor = 2f;
 
     private void Start()
@@ -58,6 +65,9 @@ public class Player1 : MonoBehaviour
         originalScale = transform.localScale;
         initialPushDamage = pushDamage;
         isPowerUpActive = false;
+        barraDeVida = FindObjectOfType<BarraDeVida>();
+        barraDeVida.InicializarBarraDeVida(currentLives);
+        originalMoveSpeed = moveSpeed;
     }
 
     private void Update()
@@ -171,7 +181,7 @@ public class Player1 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
-            TakeDamage();
+            TakeDamage(-1);
         }
 
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 2
@@ -181,6 +191,11 @@ public class Player1 : MonoBehaviour
         if (collision.collider.CompareTag("PowerUp"))
         {
             ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
+        if (collision.collider.CompareTag("PowerDown"))
+        {
+            ApplyPowerDown(powerDownDuration);
             Destroy(collision.gameObject);
         }
         if (collision.collider.CompareTag("Item") && canTouchObject)
@@ -218,16 +233,45 @@ public class Player1 : MonoBehaviour
             }
         }
     }
+    public void ApplyPowerDown(float powerDownDuration)
+    {
+        if (!isPowerDownActive)
+        {
+            isPowerDownActive = true;
 
+            StartCoroutine(PowerDownCoroutine());
+        }
+    }
     public void ActivatePowerUp()
     {
         if (!isPowerUpActive)
         {
             isPowerUpActive = true;
             pushDamage *= 2;
+            pushForce *= 3;
             StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
             StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
         }
+    }
+    private IEnumerator PowerDownCoroutine()
+    {
+        // Reducir el tamaño del jugador
+        transform.localScale = originalScale * powerDownScaleFactor;
+
+        // Reducir la velocidad del jugador
+        moveSpeed *= powerDownSpeedMultiplier;
+
+        // Reducir el daño del jugador
+        pushDamage -= powerDownDamageReduction;
+
+        yield return new WaitForSeconds(powerDownDuration);
+
+        // Restaurar el tamaño, velocidad y daño original del jugador
+        transform.localScale = originalScale;
+        moveSpeed = originalMoveSpeed;
+        pushDamage = initialPushDamage;
+
+        isPowerDownActive = false;
     }
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
@@ -256,11 +300,12 @@ public class Player1 : MonoBehaviour
 
         isPowerUpActive = false; // Restablecer el estado del power-up
     }
-    public void TakeDamage()
+    public void TakeDamage(int dmg)
     {
         if (isDead)
             return;
-        currentLives--;
+        currentLives -= dmg;
+        barraDeVida.CambiarVidaActual(currentLives);
 
         if (currentLives <= 0)
         {
@@ -371,7 +416,7 @@ public class Player1 : MonoBehaviour
                 player2Rb.AddForce(pushDirection * pushForce, ForceMode2D.Impulse);
             }
 
-            player2.TakeDamage();
+            player2.TakeDamage(pushDamage);
            
         }
         
