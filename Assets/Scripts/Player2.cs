@@ -33,15 +33,15 @@ public class Player2 : MonoBehaviour
     public float powerDownDuration = 10f;
     public float powerDownScaleFactor = 0.5f;
     public float powerDownSpeedMultiplier = 0.5f;
+    public float powerDownJumpMultiplier = 0.5f;
     public int powerDownDamageReduction = 1;
-
     private bool isPowerDownActive = false;
     private float originalMoveSpeed;
     private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.G;
     public float pushForce = 10f;
     public int pushDamage = 1;
-
+    private float originalJumpForce;
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
     public bool isPowerUpActive = false;
@@ -50,6 +50,7 @@ public class Player2 : MonoBehaviour
     private float targetScaleFactor = 2f;
     private int initialPushDamage;
     private BarraDeVida2 barraDeVida2;
+    private bool hasJumpedInAir = false;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -64,6 +65,7 @@ public class Player2 : MonoBehaviour
         barraDeVida2 = FindObjectOfType<BarraDeVida2>();
         barraDeVida2.InicializarBarraDeVida(currentLives);
         originalMoveSpeed = moveSpeed;
+        originalJumpForce = jumpForce;
     }
 
     private void Update()
@@ -133,9 +135,14 @@ public class Player2 : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.W))
         {
-            if (isGrounded)
+            if (isGrounded || !hasJumpedInAir)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+                if (!isGrounded)
+                {
+                    hasJumpedInAir = true; // Registrar el salto en el aire
+                }
             }
             if (isGrounded && Input.GetKey(runKey)) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
             {
@@ -165,6 +172,7 @@ public class Player2 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = true;
+            hasJumpedInAir = false;
         }
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
@@ -193,6 +201,17 @@ public class Player2 : MonoBehaviour
             collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
         }
     }
+
+    public void ApplyPowerDown(float powerDownDuration)
+    {
+        if (!isPowerDownActive)
+        {
+            isPowerDownActive = true;
+
+            StartCoroutine(PowerDownCoroutine());
+        }
+    }
+
     public void ActivatePowerUp()
     {
         if (!isPowerUpActive)
@@ -205,36 +224,40 @@ public class Player2 : MonoBehaviour
             StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
         }
     }
-
-    public void ApplyPowerDown(float powerDownDuration)
-    {
-        if (!isPowerDownActive)
-        {
-            isPowerDownActive = true;
-
-            StartCoroutine(PowerDownCoroutine());
-        }
-    }
     private IEnumerator PowerDownCoroutine()
     {
+        // Guardar el valor original de la velocidad
+        float originalMoveSpeed = moveSpeed;
+
+        // Guardar el valor original de la fuerza de salto
+        float originalJumpForce = jumpForce;
+
         // Reducir el tamaño del jugador
         transform.localScale = originalScale * powerDownScaleFactor;
 
         // Reducir la velocidad del jugador
         moveSpeed *= powerDownSpeedMultiplier;
 
-        // Reducir el daño del jugador
-        pushDamage -= powerDownDamageReduction;
+        // Reducir la fuerza de salto del jugador
+        jumpForce *= powerDownJumpMultiplier;
 
         yield return new WaitForSeconds(powerDownDuration);
 
-        // Restaurar el tamaño, velocidad y daño original del jugador
+        // Restaurar el tamaño original del jugador
         transform.localScale = originalScale;
+
+        // Restaurar la velocidad original del jugador
         moveSpeed = originalMoveSpeed;
-        pushDamage = initialPushDamage;
+
+        // Restaurar la fuerza de salto original del jugador
+        jumpForce = originalJumpForce;
+
+        // Restaurar el daño original del jugador
+       
 
         isPowerDownActive = false;
     }
+
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -289,7 +312,7 @@ public class Player2 : MonoBehaviour
     {
         currentLives += amount;
         Debug.Log("Player 2 healed. Current lives: " + currentLives);
-
+        barraDeVida2.CambiarVidaActual(currentLives);
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
 

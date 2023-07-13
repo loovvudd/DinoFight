@@ -28,14 +28,14 @@ public class Player1 : MonoBehaviour
     public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
     private BarraDeVida barraDeVida;
     public float jumpForce = 7f;
-
+    private float originalJumpForce;
     public int maxLives = 3;
     public int currentLives;
     public float powerDownDuration = 10f;
     public float powerDownScaleFactor = 0.5f;
     public float powerDownSpeedMultiplier = 0.5f;
     public int powerDownDamageReduction = 1;
-
+    public float powerDownJumpMultiplier = 0.5f;
     private bool isPowerDownActive = false;
     private float originalMoveSpeed;
     private Vector3 originalScale;
@@ -45,13 +45,11 @@ public class Player1 : MonoBehaviour
     public KeyCode pushButton = KeyCode.L;
     public float pushForce = 10f;
     public int pushDamage = 1;
-
     public Player2 player2; // Referencia al script del jugador 2
-
     private bool isTouchingPlayer2 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
    public bool isPowerUpActive = false;
     public float powerUpDuration = 10f;
-
+    private bool hasJumpedInAir = false;
     private float targetScaleFactor = 2f;
 
     private void Start()
@@ -68,6 +66,7 @@ public class Player1 : MonoBehaviour
         barraDeVida = FindObjectOfType<BarraDeVida>();
         barraDeVida.InicializarBarraDeVida(currentLives);
         originalMoveSpeed = moveSpeed;
+        originalJumpForce = jumpForce;
     }
 
     private void Update()
@@ -150,10 +149,14 @@ public class Player1 : MonoBehaviour
                 // Intentar saltar sobre el jugador 2
                 TryJumpOnPlayer2();
             }
-            if (isGrounded) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
+            if (isGrounded || !hasJumpedInAir)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
+                if (!isGrounded)
+                {
+                    hasJumpedInAir = true; // Registrar el salto en el aire
+                }
             }
             animator.SetTrigger("Jump");
         }
@@ -176,7 +179,8 @@ public class Player1 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = true;
-            
+            hasJumpedInAir = false;
+
         }
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
@@ -255,24 +259,38 @@ public class Player1 : MonoBehaviour
     }
     private IEnumerator PowerDownCoroutine()
     {
+        // Guardar el valor original de la velocidad
+        float originalMoveSpeed = moveSpeed;
+
+        // Guardar el valor original de la fuerza de salto
+        float originalJumpForce = jumpForce;
+
         // Reducir el tamaño del jugador
         transform.localScale = originalScale * powerDownScaleFactor;
 
         // Reducir la velocidad del jugador
         moveSpeed *= powerDownSpeedMultiplier;
 
-        // Reducir el daño del jugador
-        pushDamage -= powerDownDamageReduction;
+        // Reducir la fuerza de salto del jugador
+        jumpForce *= powerDownJumpMultiplier;
 
         yield return new WaitForSeconds(powerDownDuration);
 
-        // Restaurar el tamaño, velocidad y daño original del jugador
+        // Restaurar el tamaño original del jugador
         transform.localScale = originalScale;
+
+        // Restaurar la velocidad original del jugador
         moveSpeed = originalMoveSpeed;
-        pushDamage = initialPushDamage;
+
+        // Restaurar la fuerza de salto original del jugador
+        jumpForce = originalJumpForce;
+
+        // Restaurar el daño original del jugador
+        pushDamage += powerDownDamageReduction;
 
         isPowerDownActive = false;
     }
+
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -386,7 +404,7 @@ public class Player1 : MonoBehaviour
     {
         currentLives += amount;
         Debug.Log("Player 1 healed. Current lives: " + currentLives);
-
+        barraDeVida.CambiarVidaActual(currentLives);
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
    
