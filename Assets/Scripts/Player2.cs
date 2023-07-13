@@ -30,20 +30,27 @@ public class Player2 : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
-
+    public float powerDownDuration = 10f;
+    public float powerDownScaleFactor = 0.5f;
+    public float powerDownSpeedMultiplier = 0.5f;
+    public float powerDownJumpMultiplier = 0.5f;
+    public int powerDownDamageReduction = 1;
+    private bool isPowerDownActive = false;
+    private float originalMoveSpeed;
     private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.G;
     public float pushForce = 10f;
     public int pushDamage = 1;
-
+    private float originalJumpForce;
     private bool isDead = false;
     private bool isTouchingPlayer1 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
-    private bool isPowerUpActive = false;
+    public bool isPowerUpActive = false;
     public float powerUpDuration = 10f;
     private Vector3 originalScale;
     private float targetScaleFactor = 2f;
     private int initialPushDamage;
     private BarraDeVida2 barraDeVida2;
+    private bool hasJumpedInAir = false;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -57,6 +64,8 @@ public class Player2 : MonoBehaviour
         isPowerUpActive = false;
         barraDeVida2 = FindObjectOfType<BarraDeVida2>();
         barraDeVida2.InicializarBarraDeVida(currentLives);
+        originalMoveSpeed = moveSpeed;
+        originalJumpForce = jumpForce;
     }
 
     private void Update()
@@ -78,7 +87,7 @@ public class Player2 : MonoBehaviour
                 isWaiting = true;
                 moveSpeedMultiplier = 1f;
             }
-            // Ejecutar animación de correr
+
             animator.SetBool("IsRunning", true);
         }
         else
@@ -126,9 +135,14 @@ public class Player2 : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.W))
         {
-            if (isGrounded)
+            if (isGrounded || !hasJumpedInAir)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+                if (!isGrounded)
+                {
+                    hasJumpedInAir = true; // Registrar el salto en el aire
+                }
             }
             if (isGrounded && Input.GetKey(runKey)) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
             {
@@ -158,11 +172,13 @@ public class Player2 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = true;
+            hasJumpedInAir = false;
         }
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
             TakeDamage(-1);
+            barraDeVida2.CambiarVidaActual(currentLives);
         }
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 1
         {
@@ -173,6 +189,11 @@ public class Player2 : MonoBehaviour
             ActivatePowerUp();
             Destroy(collision.gameObject);
         }
+        if (collision.collider.CompareTag("PowerDown"))
+        {
+            ApplyPowerDown(powerDownDuration);
+            Destroy(collision.gameObject);
+        }
         if (collision.collider.CompareTag("Item") && canTouchObject)
         {
             Transform objectTransform = collision.transform;
@@ -181,16 +202,63 @@ public class Player2 : MonoBehaviour
             collision.gameObject.GetComponent<Rigidbody2D>().isKinematic = true; // Desactivar la física del objeto colisionado
         }
     }
+
+    public void ApplyPowerDown(float powerDownDuration)
+    {
+        if (!isPowerDownActive)
+        {
+            isPowerDownActive = true;
+
+            StartCoroutine(PowerDownCoroutine());
+        }
+    }
+
     public void ActivatePowerUp()
     {
         if (!isPowerUpActive)
         {
             isPowerUpActive = true;
             pushDamage *= 2;
+            pushForce *= 3;
+
             StartCoroutine(ScalePlayerOverTime(targetScaleFactor, powerUpDuration));
             StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
         }
     }
+    private IEnumerator PowerDownCoroutine()
+    {
+        // Guardar el valor original de la velocidad
+        float originalMoveSpeed = moveSpeed;
+
+        // Guardar el valor original de la fuerza de salto
+        float originalJumpForce = jumpForce;
+
+        // Reducir el tamaño del jugador
+        transform.localScale = originalScale * powerDownScaleFactor;
+
+        // Reducir la velocidad del jugador
+        moveSpeed *= powerDownSpeedMultiplier;
+
+        // Reducir la fuerza de salto del jugador
+        jumpForce *= powerDownJumpMultiplier;
+
+        yield return new WaitForSeconds(powerDownDuration);
+
+        // Restaurar el tamaño original del jugador
+        transform.localScale = originalScale;
+
+        // Restaurar la velocidad original del jugador
+        moveSpeed = originalMoveSpeed;
+
+        // Restaurar la fuerza de salto original del jugador
+        jumpForce = originalJumpForce;
+
+        // Restaurar el daño original del jugador
+       
+
+        isPowerDownActive = false;
+    }
+
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -245,7 +313,7 @@ public class Player2 : MonoBehaviour
     {
         currentLives += amount;
         Debug.Log("Player 2 healed. Current lives: " + currentLives);
-
+        barraDeVida2.CambiarVidaActual(currentLives);
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
 
@@ -290,7 +358,7 @@ public class Player2 : MonoBehaviour
             yield return new WaitForSeconds(0.90f); // Tiempo de espera para que termine la animación de muerte
 
             gameObject.SetActive(false); // Desactivar el objeto del jugador
-            
+
         }
         if (objetoSeguidor != null && objetoSeguidor.transform.parent == transform)
         {
@@ -299,9 +367,10 @@ public class Player2 : MonoBehaviour
             objetoRigidbody.isKinematic = false; // Activar la física del objeto
             objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
         }
+        barraDeVida2.CambiarVidaActual(currentLives);
     }
-   
-   
+
+
     private IEnumerator ShowDialogAndHideAfterDelay()
     {
         dialogBubble2.SetActive(true); // Activa la nube de diálogo

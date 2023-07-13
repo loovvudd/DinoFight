@@ -28,23 +28,28 @@ public class Player1 : MonoBehaviour
     public AudioClip damage; // Sonido a reproducir cuando el jugador recibe daño
     private BarraDeVida barraDeVida;
     public float jumpForce = 7f;
-
+    private float originalJumpForce;
     public int maxLives = 3;
     public int currentLives;
-
+    public float powerDownDuration = 10f;
+    public float powerDownScaleFactor = 0.5f;
+    public float powerDownSpeedMultiplier = 0.5f;
+    public int powerDownDamageReduction = 1;
+    public float powerDownJumpMultiplier = 0.5f;
+    private bool isPowerDownActive = false;
+    private float originalMoveSpeed;
+    private Vector3 originalScale;
     private bool isInvincible = false;
     public float invincibilityTime = 2f;
     private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.L;
     public float pushForce = 10f;
     public int pushDamage = 1;
-
     public Player2 player2; // Referencia al script del jugador 2
-
     private bool isTouchingPlayer2 = false; // Variable para rastrear si el jugador 1 está tocando al jugador 2
-    private bool isPowerUpActive = false;
+    public bool isPowerUpActive = false;
     public float powerUpDuration = 10f;
-    private Vector3 originalScale;
+    private bool hasJumpedInAir = false;
     private float targetScaleFactor = 2f;
 
     private void Start()
@@ -60,6 +65,8 @@ public class Player1 : MonoBehaviour
         isPowerUpActive = false;
         barraDeVida = FindObjectOfType<BarraDeVida>();
         barraDeVida.InicializarBarraDeVida(currentLives);
+        originalMoveSpeed = moveSpeed;
+        originalJumpForce = jumpForce;
     }
 
     private void Update()
@@ -142,10 +149,14 @@ public class Player1 : MonoBehaviour
                 // Intentar saltar sobre el jugador 2
                 TryJumpOnPlayer2();
             }
-            if (isGrounded) // Permitir saltar si está en el suelo o si se mantiene presionada la tecla de correr
+            if (isGrounded || !hasJumpedInAir)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
 
+                if (!isGrounded)
+                {
+                    hasJumpedInAir = true; // Registrar el salto en el aire
+                }
             }
             animator.SetTrigger("Jump");
         }
@@ -168,21 +179,29 @@ public class Player1 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = true;
-            
+            hasJumpedInAir = false;
+
         }
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
+            barraDeVida = FindObjectOfType<BarraDeVida>();
             TakeDamage(-1);
+            barraDeVida.CambiarVidaActual(currentLives);
         }
 
-        if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 2
+        if (collision.gameObject.CompareTag("Player"))
         {
             isTouchingPlayer2 = true;
         }
         if (collision.collider.CompareTag("PowerUp"))
         {
             ActivatePowerUp();
+            Destroy(collision.gameObject);
+        }
+        if (collision.collider.CompareTag("PowerDown"))
+        {
+            ApplyPowerDown(powerDownDuration);
             Destroy(collision.gameObject);
         }
         if (collision.collider.CompareTag("Item") && canTouchObject)
@@ -220,7 +239,15 @@ public class Player1 : MonoBehaviour
             }
         }
     }
+    public void ApplyPowerDown(float powerDownDuration)
+    {
+        if (!isPowerDownActive)
+        {
+            isPowerDownActive = true;
 
+            StartCoroutine(PowerDownCoroutine());
+        }
+    }
     public void ActivatePowerUp()
     {
         if (!isPowerUpActive)
@@ -232,6 +259,40 @@ public class Player1 : MonoBehaviour
             StartCoroutine(ResetPushDamageAfterDelay(powerUpDuration));
         }
     }
+    private IEnumerator PowerDownCoroutine()
+    {
+        // Guardar el valor original de la velocidad
+        float originalMoveSpeed = moveSpeed;
+
+        // Guardar el valor original de la fuerza de salto
+        float originalJumpForce = jumpForce;
+
+        // Reducir el tamaño del jugador
+        transform.localScale = originalScale * powerDownScaleFactor;
+
+        // Reducir la velocidad del jugador
+        moveSpeed *= powerDownSpeedMultiplier;
+
+        // Reducir la fuerza de salto del jugador
+        jumpForce *= powerDownJumpMultiplier;
+
+        yield return new WaitForSeconds(powerDownDuration);
+
+        // Restaurar el tamaño original del jugador
+        transform.localScale = originalScale;
+
+        // Restaurar la velocidad original del jugador
+        moveSpeed = originalMoveSpeed;
+
+        // Restaurar la fuerza de salto original del jugador
+        jumpForce = originalJumpForce;
+
+        // Restaurar el daño original del jugador
+        pushDamage += powerDownDamageReduction;
+
+        isPowerDownActive = false;
+    }
+
     private IEnumerator ResetPushDamageAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -264,7 +325,7 @@ public class Player1 : MonoBehaviour
         if (isDead)
             return;
         currentLives -= dmg;
-        barraDeVida.CambiarVidaActual(currentLives);
+        
 
         if (currentLives <= 0)
         {
@@ -281,8 +342,9 @@ public class Player1 : MonoBehaviour
             animator.Play("Damage1", -1, 0f); // Reemplaza "DamageAnimation" con el nombre de la animación de daño en el Animator
             animator.Update(0f); // Actualiza el estado de la animación al inicio para que se muestre de inmediato
             audioSource.PlayOneShot(damage);
+            barraDeVida.CambiarVidaActual(currentLives);
         }
-       
+
 
         IEnumerator DisablePlayerCoroutine()
         {
@@ -297,6 +359,7 @@ public class Player1 : MonoBehaviour
             objetoRigidbody.isKinematic = false; // Activar la física del objeto
             objetoRigidbody.velocity = new Vector2(0f, fuerzaLanzamiento); // Lanzar el objeto hacia arriba
         }
+        
     }
 
     IEnumerator DisablePowerUpAfterDuration()
@@ -345,7 +408,7 @@ public class Player1 : MonoBehaviour
     {
         currentLives += amount;
         Debug.Log("Player 1 healed. Current lives: " + currentLives);
-
+        barraDeVida.CambiarVidaActual(currentLives);
         StartCoroutine(ChangePlayerColor(healColor, colorChangeDuration));
     }
    
