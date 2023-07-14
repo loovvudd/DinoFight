@@ -47,7 +47,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 400
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -715,34 +715,34 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Lava ahora si_0: -1921050860
-      Lava ahora si_1: 2113452169
       Lava ahora si_10: -1483490798
-      Lava ahora si_11: -2083974048
       Lava ahora si_12: 290449924
+      Lava ahora si_26: 482823569
+      Lava ahora si_1: 2113452169
+      Lava ahora si_22: 1278218653
+      Lava ahora si_18: -1056994017
       Lava ahora si_13: 252222765
+      Lava ahora si_9: -305594727
+      Lava ahora si_6: -769696159
+      Lava ahora si_16: -814248737
+      Lava ahora si_24: 1545445157
+      Lava ahora si_8: -70762440
+      Lava ahora si_25: 1970931138
+      Lava ahora si_2: -1903982140
+      Lava ahora si_19: -792676682
+      Lava ahora si_4: -1145286169
+      Lava ahora si_3: -2048016467
+      Lava ahora si_21: 1466371210
+      Lava ahora si_7: 1951788448
+      Lava ahora si_17: 862383209
       Lava ahora si_14: -237212589
       Lava ahora si_15: 1126331804
-      Lava ahora si_16: -814248737
-      Lava ahora si_17: 862383209
-      Lava ahora si_18: -1056994017
-      Lava ahora si_19: -792676682
-      Lava ahora si_2: -1903982140
-      Lava ahora si_20: 1957648073
-      Lava ahora si_21: 1466371210
-      Lava ahora si_22: 1278218653
       Lava ahora si_23: -278731459
-      Lava ahora si_24: 1545445157
-      Lava ahora si_25: 1970931138
-      Lava ahora si_26: 482823569
+      Lava ahora si_11: -2083974048
       Lava ahora si_27: 756944990
-      Lava ahora si_3: -2048016467
-      Lava ahora si_4: -1145286169
+      Lava ahora si_0: -1921050860
+      Lava ahora si_20: 1957648073
       Lava ahora si_5: 805849326
-      Lava ahora si_6: -769696159
-      Lava ahora si_7: 1951788448
-      Lava ahora si_8: -70762440
-      Lava ahora si_9: -305594727
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

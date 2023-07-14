@@ -19,8 +19,15 @@ public class Levels : MonoBehaviour
     {
        SceneManager.LoadScene("Escena3");
     }
-    
-     public void BacktoMenu()
+    public void Creditos()
+    {
+        SceneManager.LoadScene("Creditos");
+    }
+    public void Tutorial()
+    {
+        SceneManager.LoadScene("Tutorial");
+    }
+    public void BacktoMenu()
     {
         SceneManager.LoadScene("MenuPrincipal");
     }

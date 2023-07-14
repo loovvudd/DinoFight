@@ -169,16 +169,25 @@ MonoBehaviour:
   dialogOffsetX: 0
   objetoSeguidor: {fileID: 0}
   fuerzaLanzamiento: 10
+  healColor: {r: 0, g: 1, b: 0, a: 1}
+  colorChangeDuration: 1
   audioSource: {fileID: 1678128850}
   damage: {fileID: 8300000, guid: 747eea464c05db843bb5fc9e76fa033b, type: 3}
   jumpForce: 5
   maxLives: 3
   currentLives: 0
-  invincibilityTime: 2
+  powerDownDuration: 10
+  powerDownScaleFactor: 0.5
+  powerDownSpeedMultiplier: 0.5
+  powerDownDamageReduction: 1
+  powerDownJumpMultiplier: 0.5
+  invincibilityTime: 3.5
   pushButton: 108
   pushForce: 3
   pushDamage: 1
   player2: {fileID: 0}
+  isPowerUpActive: 0
+  powerUpDuration: 10
 --- !u!82 &1678128850
 AudioSource:
   m_ObjectHideFlags: 0

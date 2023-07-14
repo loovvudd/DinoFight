@@ -47,4 +47,4 @@ MonoBehaviour:
   nextSceneName: Seleccionar Niveles
   player1: {fileID: 0}
   player2: {fileID: 0}
-  timeToWait: 3
+  timeToWait: 8

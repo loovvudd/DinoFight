@@ -185,8 +185,15 @@ public class Player1 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
+            TakeDamage(1);
             barraDeVida = FindObjectOfType<BarraDeVida>();
-            TakeDamage(-1);
+            barraDeVida.CambiarVidaActual(currentLives);
+        }
+
+        if (collision.gameObject.CompareTag("Ejecucion"))
+        {
+            TakeDamage(1000000);
+            barraDeVida = FindObjectOfType<BarraDeVida>();
             barraDeVida.CambiarVidaActual(currentLives);
         }
 
@@ -220,7 +227,6 @@ public class Player1 : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Platform"))
         {
             isGrounded = false;
-
         }
 
         if (collision.gameObject.CompareTag("Player")) // Comprueba si deja de tocar al jugador 2

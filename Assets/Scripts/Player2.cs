@@ -177,9 +177,18 @@ public class Player2 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Enemy") && !isInvincible)
         {
-            TakeDamage(-1);
+            TakeDamage(1);
+            barraDeVida2 = FindObjectOfType<BarraDeVida2>();
             barraDeVida2.CambiarVidaActual(currentLives);
         }
+
+        if (collision.gameObject.CompareTag("Ejecucion"))
+        {
+            TakeDamage(1000000);
+            barraDeVida2 = FindObjectOfType<BarraDeVida2>();
+            barraDeVida2.CambiarVidaActual(currentLives);
+        }
+
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 1
         {
             isTouchingPlayer1 = true;

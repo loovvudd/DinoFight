@@ -173,12 +173,21 @@ MonoBehaviour:
   audioSource: {fileID: 1056585945}
   damage: {fileID: 8300000, guid: 747eea464c05db843bb5fc9e76fa033b, type: 3}
   jumpForce: 5
+  healColor: {r: 0, g: 1, b: 0, a: 1}
+  colorChangeDuration: 1
   maxLives: 3
   currentLives: 0
-  invincibilityTime: 2
+  invincibilityTime: 3.5
+  powerDownDuration: 10
+  powerDownScaleFactor: 0.5
+  powerDownSpeedMultiplier: 0.5
+  powerDownJumpMultiplier: 0.5
+  powerDownDamageReduction: 1
   pushButton: 103
   pushForce: 3
   pushDamage: 1
+  isPowerUpActive: 0
+  powerUpDuration: 10
 --- !u!82 &1056585945
 AudioSource:
   m_ObjectHideFlags: 0
