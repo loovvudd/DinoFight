@@ -185,9 +185,13 @@ MonoBehaviour:
   powerDownDamageReduction: 1
   pushButton: 103
   pushForce: 3
+  pushForce2: 10
   pushDamage: 1
   isPowerUpActive: 0
   powerUpDuration: 10
+  dashForce: 0.5
+  dashDuration: 0.3
+  dashKey: 104
 --- !u!82 &1056585945
 AudioSource:
   m_ObjectHideFlags: 0

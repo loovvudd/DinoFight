@@ -40,6 +40,7 @@ public class Player2 : MonoBehaviour
     private Animator animator; // Referencia al componente Animator
     public KeyCode pushButton = KeyCode.G;
     public float pushForce = 10f;
+    public float pushForce2 = 10f;
     public int pushDamage = 1;
     private float originalJumpForce;
     private bool isDead = false;
@@ -51,6 +52,12 @@ public class Player2 : MonoBehaviour
     private int initialPushDamage;
     private BarraDeVida2 barraDeVida2;
     private bool hasJumpedInAir = false;
+    public float dashForce = 20f;
+    public float dashDuration = 0.1f;
+    public KeyCode dashKey = KeyCode.Space;
+    private bool isDashing = false;
+    private float dashTimer = 0f;
+    private Vector2 dashDirection = Vector2.zero;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -165,6 +172,38 @@ public class Player2 : MonoBehaviour
             Vector3 dialogOffset = new Vector3(dialogOffsetX, dialogOffsetY, 0f);
             dialogBubble2.transform.position = transform.position + dialogOffset;
         }
+        if (Input.GetKeyDown(dashKey) && !isDashing)
+        {
+            isDashing = true;
+            dashTimer = 0f;
+            rb.velocity = Vector2.zero;
+            animator.SetBool("IsDashing", true); // Activa la animación de dash
+            if (!isGrounded)
+            {
+                dashDirection = new Vector2(horizontalInput, 0f).normalized;
+            }
+            else
+            {
+                // Dash en la dirección en la que el jugador estaba moviéndose
+                dashDirection = new Vector2(horizontalInput, 0f).normalized;
+            }
+        }
+
+        if (isDashing)
+        {
+            dashTimer += Time.deltaTime;
+
+            if (dashTimer <= dashDuration)
+            {
+
+                rb.AddForce(dashDirection * dashForce, ForceMode2D.Impulse);
+            }
+            else
+            {
+                isDashing = false;
+                animator.SetBool("IsDashing", false); // Desactiva la animación de dash
+            }
+        }
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -191,6 +230,10 @@ public class Player2 : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Player")) // Comprueba si está tocando al jugador 1
         {
+            if (isDashing)
+            {
+                PushPlayer1Up();
+            }
             isTouchingPlayer1 = true;
         }
         if (collision.collider.CompareTag("PowerUp"))
@@ -221,7 +264,22 @@ public class Player2 : MonoBehaviour
             StartCoroutine(PowerDownCoroutine());
         }
     }
+    private void PushPlayer1Up()
+    {
+        if (player1 != null)
+        {
+            Vector2 pushDirection = Vector2.up; // Empuje hacia arriba
+            Rigidbody2D player1Rb = player1.GetComponent<Rigidbody2D>();
 
+            if (player1Rb != null)
+            {
+                player1Rb.velocity = Vector2.zero;
+                player1Rb.AddForce(pushDirection * pushForce2, ForceMode2D.Impulse);
+            }
+
+            player1.TakeDamage(pushDamage);
+        }
+    }
     public void ActivatePowerUp()
     {
         if (!isPowerUpActive)
